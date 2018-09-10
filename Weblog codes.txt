@@ -1,0 +1,39 @@
+1.first delimit columns by ","
+code:
+awk '{print $1 "," $2 "," $4 "," $5 "," $6 "," $7 "," $8 "," $9}' Accesslog
+output:
+5.45.105.71,DE,[2015-09-29,23:32:40.811767],"GET,/cms/feed/,HTTP/1.1",200
+
+2.take out 
+"[" from [2015-09-29 
+:40.811767] from 23:32:40.811767]
+" from "GET
+" from HTTP/1.1"
+
+problems: can only edit one column each time.
+
+OR 
+
+upload to HDFS 
+use reg_extract in Hive to create a new table
+RE extraction code for Acceslog:
+^([0-9].*?)\s(.*?)\s(.*?)\s\[(.*?)\s([0-9]{2}:[0-9]{2}):(?:.*]\s")([A-Z]*?)\s(.*?)\s(.*?)"\s([0-9]*?)\s(?:.*$)
+
+Hive code:
+CREATE EXTERNAL TABLE FUCKOFF (IP int, Country string, Date string, Time string, Request string, Resource string, Status string) ROW FORMAT SERDE 'org.apache.hadoop.hive.serde2.RegexSerDe' WITH SERDEPROPERTIES ('input.regex'='^([0-9].*?)\\s(.*?)\\s(.*?)\\s\[(.*?)\\s([0-9]{2}:[0-9]{2}):(?:.*]\\s")([A-Z]*?)\\s(.*?)\\s(.*?)"\\s([0-9]*?)\\s(?:.*$)') LOCATION '/user/cloudera/hive/serde/regex'; 
+
+CREATE EXTERNAL TABLE FUCKOFF111 (IP string, Country string, Date string, Time string, Request string, Resource string, Status string) ROW FORMAT SERDE 'org.apache.hadoop.hive.serde2.RegexSerDe' WITH SERDEPROPERTIES ('input.regex'='^([0-9].*?) (.*?) (?:.*?) \\[(.*?) ([0-9]{2}:[0-9]{2}):(?:.*] \\")([A-Z]*?) (.*?) (?:.*?)\\" ([0-9]*?) (?:.*$)') LOCATION '/user/cloudera/hive/serde/regex'; 
+
+
+
+What are we interested:
+1. Unique no. of IP in Sep
+select DISTINCT IP from weblog
+2. Total Page View
+select count(*) from weblogs
+3. Page View group by date ORDER BY ASC
+select count(IP),CAST(Date AS DATE) from fuckoff111 group by CAST(Date AS DATE); 
+4.Where are the users' from, country? select from unique IP
+select count(distinct IP) IP_DIST, Country  from fuckoff111 tb1 group by Country order by IP_DIST DESC;
+
+
